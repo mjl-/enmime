@@ -21,33 +21,33 @@ type Envelope struct {
 	Inlines     []*Part               // All parts having a Content-Disposition of inline
 	OtherParts  []*Part               // All parts not in Attachments and Inlines
 	Errors      []*Error              // Errors encountered while parsing
-	header      *textproto.MIMEHeader // Header from original message
+	Header      *textproto.MIMEHeader // Header from original message
 }
 
 // GetHeader processes the specified header for RFC 2047 encoded words and returns the result as a
 // UTF-8 string
 func (e *Envelope) GetHeader(name string) string {
-	if e.header == nil {
+	if e.Header == nil {
 		return ""
 	}
-	return decodeHeader(e.header.Get(name))
+	return decodeHeader(e.Header.Get(name))
 }
 
 // AddressList returns a mail.Address slice with RFC 2047 encoded names converted to UTF-8
 func (e *Envelope) AddressList(key string) ([]*mail.Address, error) {
-	if e.header == nil {
+	if e.Header == nil {
 		return nil, fmt.Errorf("No headers available")
 	}
 	if !AddressHeaders[strings.ToLower(key)] {
 		return nil, fmt.Errorf("%s is not an address header", key)
 	}
 
-	str := decodeToUTF8Base64Header(e.header.Get(key))
+	str := decodeToUTF8Base64Header(e.Header.Get(key))
 	if str == "" {
 		return nil, mail.ErrHeaderNotPresent
 	}
 	// These statements are handy for debugging ParseAddressList errors
-	// fmt.Println("in:  ", m.header.Get(key))
+	// fmt.Println("in:  ", m.Header.Get(key))
 	// fmt.Println("out: ", str)
 	ret, err := mail.ParseAddressList(str)
 	if err != nil {
@@ -75,7 +75,7 @@ func ReadEnvelope(r io.Reader) (*Envelope, error) {
 func EnvelopeFromPart(root *Part) (*Envelope, error) {
 	e := &Envelope{
 		Root:   root,
-		header: &root.Header,
+		Header: &root.Header,
 	}
 
 	if isMultipartMessage(root) {
